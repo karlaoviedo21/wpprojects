@@ -1,0 +1,554 @@
+//// Variables globales
+var tablaAmort = [];
+var tablaPlusvalia = [];
+var valorUF = 0;
+var valorpDepto = 0;
+var valorpPie = 0;
+var valorMonedaCredito = 0;
+var valorCuotaMensual = 0;
+var invPie = 0;
+var invGastosMen = 0;
+var bakap = 0;
+var oPagos = 0;
+var aPagos = 0;
+var vCuota = 0;
+var porcPluvalia = 0;
+var credito = 0;
+var cantanos = 1;
+var ppie = 0;
+var pdepto = 0;
+var anioVenta = 1;
+var totalInv = 0;
+var intereses = 3;
+var valorVentaPlusvalia = 0;
+var arriendo = 0;
+
+$(document).ready(function () {
+
+    (async () => {
+        await getUf();
+        await LeerPlusvalias();
+        await LeerArriendo();
+        //let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt($(this).val())[0]);
+
+    })();
+
+    // Valor Uf actual
+
+    $('#pdepto').on('keyup', function (e) {
+        if ($(this).val() == "") $(this).val(0);
+        pdepto = $(this).val();
+        let total = parseFloat(valorUF) * parseFloat(pdepto);
+        if (total < 1) total = 0;
+        valorpDepto = total;
+        $('#pdeptoUF').text('Valor con UF: ' + HelperFN.formatMoneda(total));
+        credito = parseFloat(pdepto) - parseFloat(ppie);
+        valorMonedaCredito = credito * valorUF;
+        $('#credito').val(HelperFN.formatMoneda(credito));
+        /// PRECIO VENTAS
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(parseFloat(invGastosMen)));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        // Valor de Cuota mensual
+        let interes = parseFloat($('#interes').val() / 100) / 12;
+
+        let cuotas = parseFloat(cantanos) * 12;
+
+        let parte1 = (interes * Math.pow((1 + interes), cuotas)) * parseFloat(credito);
+        let parte2 = (Math.pow((1 + interes), cuotas) - 1);
+
+        let total2 = ((parte1 / parte2) * parseFloat(valorUF));
+
+        if (isNaN(total2)) total = 0;
+
+        valorCuotaMensual = total2;
+
+        $('#vcuota').val(HelperFN.formatMoneda(total2));
+        /// Cambio Arriendo/*  */
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        // console.log(oPagos)
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+    $('#pdepto').on('blur', function (e) {
+        if ($(this).val() == "") $(this).val(0);
+        pdepto = $(this).val();
+        let total = parseFloat(valorUF) * parseFloat(pdepto);
+        if (total < 1) total = 0;
+        valorpDepto = total;
+
+        $('#pdeptoUF').text('Valor con UF: ' + HelperFN.formatMoneda(total));
+        credito = parseFloat(pdepto) - parseFloat(ppie);
+        valorMonedaCredito = credito * valorUF;
+        $('#credito').val(HelperFN.formatMoneda(credito));
+        /// PRECIO VENTAS
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        // Valor de Cuota mensual
+        let interes = parseFloat($('#interes').val() / 100) / 12;
+
+        let cuotas = parseFloat(cantanos) * 12;
+
+        let parte1 = (interes * Math.pow((1 + interes), cuotas)) * parseFloat(credito);
+        let parte2 = (Math.pow((1 + interes), cuotas) - 1);
+
+        let total2 = ((parte1 / parte2) * parseFloat(valorUF));
+
+        if (isNaN(total2)) total = 0;
+
+        valorCuotaMensual = total2;
+
+        $('#vcuota').val(HelperFN.formatMoneda(total2));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+    $('#ppie').on('keyup', function (e) {
+        if ($(this).val() == "") $(this).val(0);
+        let total = 0;
+        ppie = $(this).val();
+
+        if (parseFloat($(this).val()) > parseFloat(pdepto)) {
+
+            $(this).val(pdepto);
+            ppie = pdepto;
+            total = parseFloat(valorUF) * parseFloat($(this).val());
+            $('#ppieUF').text('Valor con UF: ' + HelperFN.formatMoneda(total));
+        } else {
+            total = parseFloat(valorUF) * parseFloat($(this).val());
+            if (total < 1) total = 0;
+            valorpPie = total;
+            $('#ppieUF').text('Valor con UF: ' + HelperFN.formatMoneda(total));
+        }
+
+        credito = parseFloat(pdepto) - parseFloat(ppie);
+        valorMonedaCredito = credito * valorUF;
+        $('#credito').val(HelperFN.formatMoneda(credito));
+        /// PRECIO VENTAS
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        // Valor de Cuota mensual
+        let interes = parseFloat($('#interes').val() / 100) / 12;
+
+        let cuotas = parseFloat(cantanos) * 12;
+
+        let parte1 = (interes * Math.pow((1 + interes), cuotas)) * parseFloat(credito);
+        let parte2 = (Math.pow((1 + interes), cuotas) - 1);
+
+        let total2 = ((parte1 / parte2) * parseFloat(valorUF))
+
+        if (isNaN(total2)) total = 0;
+
+        valorCuotaMensual = total2;
+
+        $('#vcuota').val(HelperFN.formatMoneda(total2));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+
+    });
+
+    $('#ppie').on('blur', function (e) {
+        if ($(this).val() == "") $(this).val(0);
+        let total = 0;
+        ppie = $(this).val();
+        if (parseFloat($(this).val()) > parseFloat(pdepto)) {
+
+            $(this).val(pdepto);
+            ppie = pdepto;
+            total = parseFloat(valorUF) * parseFloat($(this).val());
+            $('#ppieUF').text('Valor con UF: ' + HelperFN.formatMoneda(total));
+        } else {
+            total = parseFloat(valorUF) * parseFloat($(this).val());
+            if (total < 1) total = 0;
+            valorpPie = total;
+            $('#ppieUF').text('Valor con UF: ' + HelperFN.formatMoneda(total));
+        }
+        credito = parseFloat(pdepto) - parseFloat(ppie);
+        valorMonedaCredito = credito * valorUF;
+        $('#credito').val(HelperFN.formatMoneda(credito));
+        /// PRECIO VENTAS
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        // Valor de Cuota mensual
+        let interes = parseFloat($('#interes').val() / 100) / 12;
+
+        let cuotas = parseFloat(cantanos) * 12;
+
+        let parte1 = (interes * Math.pow((1 + interes), cuotas)) * parseFloat(credito);
+        let parte2 = (Math.pow((1 + interes), cuotas) - 1);
+
+        let total2 = ((parte1 / parte2) * parseFloat(valorUF))
+
+        if (isNaN(total2)) total = 0;
+
+        valorCuotaMensual = total2;
+
+        $('#vcuota').val(HelperFN.formatMoneda(total2));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+
+    $('#cantanos').on('keyup', function (e) {
+
+        if ($(this).val() == "" || $(this).val() == 0) $(this).val(1);
+        cantanos = $(this).val();
+        let interes = parseFloat($('#interes').val() / 100) / 12;
+
+        let cuotas = parseFloat($(this).val()) * 12;
+
+        let parte1 = (interes * Math.pow((1 + interes), cuotas)) * parseFloat(credito);
+        let parte2 = (Math.pow((1 + interes), cuotas) - 1);
+
+        let total = ((parte1 / parte2) * parseFloat(valorUF));
+
+        if (isNaN(total)) total = 0;
+
+        valorCuotaMensual = total;
+
+        $('#vcuota').val(HelperFN.formatMoneda(total));
+        /// PRECIO VENTAS
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+    $('#cantanos').on('blur', function (e) {
+        if ($(this).val() == "" || $(this).val() == 0) $(this).val(1);
+        cantanos = $(this).val();
+        let interes = parseFloat($('#interes').val() / 100) / 12;
+
+        let cuotas = parseFloat($(this).val()) * 12;
+
+        let parte1 = (interes * Math.pow((1 + interes), cuotas)) * parseFloat(credito);
+        let parte2 = (Math.pow((1 + interes), cuotas) - 1);
+
+        let total = ((parte1 / parte2) * parseFloat(valorUF));
+
+        if (isNaN(total)) total = 0;
+        valorCuotaMensual = total;
+        $('#vcuota').val(HelperFN.formatMoneda(total));
+        /// PRECIO VENTAS
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+    $('#anioVenta').on('keyup', function (e) {
+        if ($(this).val() == "") $(this).val(1);
+        anioVenta = $(this).val();
+        if (parseFloat($(this).val()) > 20) {
+            $(this).val(20)
+        }
+        //Precio Venta
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        $('#vPlusvalia').val(porcPluvalia);
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+    $('#anioVenta').on('blur', function (e) {
+
+        if ($(this).val() == "") $(this).val(1);
+        anioVenta = $(this).val();
+        if (parseFloat($(this).val()) > 20) {
+            $(this).val(20)
+        }
+        let porcPluvalia = tablaPlusvalia.filter(x => x.anio == parseInt(anioVenta))[0].plusvalia;
+        console.log(porcPluvalia);
+        $('#vPlusvalia').val(porcPluvalia);
+        valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+        $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        /// Cambio Arriendo
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        generalAmortizacion()
+    });
+
+    $('#Arriendo').on('keyup', function (e) {
+        if ($(this).val() == "") $(this).val(0);
+
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        generalAmortizacion()
+    });
+
+    $('#Arriendo').on('blur', function (e) {
+        if ($(this).val() == "") $(this).val(0);
+
+        bakap = parseFloat(arriendo) * 0.10;
+        oPagos = parseFloat(arriendo) * 0.01;
+        aPagos = parseFloat(arriendo) - bakap - oPagos;
+        vCuota = valorCuotaMensual - aPagos;
+
+        $('#bakap').val(HelperFN.formatMoneda(bakap));
+        $('#oPagos').val(HelperFN.formatMoneda(oPagos));
+        $('#aPago').val(HelperFN.formatMoneda(aPagos));
+        $('#dMensual').val(HelperFN.formatMoneda(vCuota))
+        //INVERSIÓN
+        invPie = ppie * valorUF;
+        $('#invPie').val(HelperFN.formatMoneda(parseFloat(invPie)));
+        invGastosMen = vCuota * 12 * parseFloat(anioVenta);
+        $('#invGastosMen').val(HelperFN.formatMoneda(invGastosMen));
+        totalInv = invPie + invGastosMen;
+        $('#totalInv').val(HelperFN.formatMoneda(parseFloat(totalInv)));
+        generalAmortizacion()
+    });
+
+    $("input[type=text]").focus(function () {
+        this.select();
+    });
+    $("input[type=number]").focus(function () {
+        this.select();
+    });
+})
+
+async function getUf() {
+    await $.getJSON('https://mindicador.cl/api', function (data) {
+        var dailyIndicators = data;
+        valorUF = dailyIndicators.uf.valor;
+        $('#valorUf').val(HelperFN.formatMoneda(valorUF));
+
+    }).fail(function () {
+        console.error('Error al consumir la API!');
+    });
+}
+
+async function LeerArriendo() {
+
+    await $.ajax({
+        cache: false,
+        url: "./data/arriendo.json",
+        dataType: "json",
+        success: function (data) {
+            let valor = data[0].valor;
+            arriendo = parseFloat(valor);
+            $('#Arriendo').val(HelperFN.formatMoneda(arriendo));
+        }
+    });
+
+}
+
+async function LeerPlusvalias() {
+
+    await $.ajax({
+        cache: false,
+        url: "./data/tablaplusvalia.json",
+        dataType: "json",
+        success: function (data) {
+            tablaPlusvalia = data;
+            let valor = data[0].plusvalia;
+            porcPluvalia = parseFloat(valor);
+            $('#vPlusvalia').val(porcPluvalia);
+
+            valorVentaPlusvalia = parseFloat(pdepto) * Math.pow(1 + (parseFloat(porcPluvalia) / 100), parseInt(anioVenta));
+
+            $('#pVentapluvalia').val(HelperFN.formatMoneda(valorVentaPlusvalia));
+        }
+    });
+
+}
+
+function generalAmortizacion() {
+    tablaAmort = [];
+    let ValorInicialAmor = credito * valorUF;
+    let CuotaMensual = valorCuotaMensual;
+    let PorcInteres = parseFloat(intereses) / 100;
+    let valorIntereses = PorcInteres / 12 * ValorInicialAmor;
+    let capital = CuotaMensual - valorIntereses;
+    let cantCuotas = anioVenta * 12;
+
+    tablaAmort.push({
+        "Meses": 0,
+        "ValorInicialAmor": parseFloat(ValorInicialAmor),
+        "CuotaMensual": parseFloat(CuotaMensual),
+        "valorIntereses": parseFloat(valorIntereses),
+        "capital": parseFloat(capital)
+    });
+
+    for (let index = 1; index <= cantCuotas; index++) {
+        let anterior = index - 1;
+
+        let item = tablaAmort.filter(x => x.Meses == anterior)[0];
+
+        let ValorInicialAmor2 = parseFloat(item.ValorInicialAmor) - parseFloat(item.capital);
+        let CuotaMensual2 = parseFloat(valorCuotaMensual);
+        let PorcInteres2 = (parseFloat(intereses) / 100) / 12;
+
+        let valorIntereses2 = (parseFloat(PorcInteres2) * parseFloat(ValorInicialAmor2));
+
+        let capital2 = parseFloat(CuotaMensual) - parseFloat(valorIntereses2);
+
+        tablaAmort.push({
+            "Meses": index,
+            "ValorInicialAmor": parseFloat(ValorInicialAmor2),
+            "CuotaMensual": parseFloat(CuotaMensual2),
+            "valorIntereses": parseFloat(valorIntereses2),
+            "capital": parseFloat(capital2)
+        });
+
+    }
+    let datosVenta = tablaAmort.filter(x => x.Meses == (tablaAmort.length - 1))[0];
+    let deudaPrecioVenta = parseFloat(datosVenta.ValorInicialAmor) + (valorIntereses * 1.5);
+    let PrecioVenta = parseFloat(valorVentaPlusvalia) * parseFloat(valorUF);
+    $('#deudaBanco').val(HelperFN.formatMoneda(deudaPrecioVenta));
+    $('#pdeVenta').val(HelperFN.formatMoneda(PrecioVenta));
+    let trecibir = parseFloat(PrecioVenta) - parseFloat(deudaPrecioVenta);
+    $('#trecibir').val(HelperFN.formatMoneda(trecibir));
+    let rentabilidad = ((parseFloat(trecibir) / parseFloat(totalInv)) / 5) * 100;
+    $('#rentabilidad').val(HelperFN.formatMoneda(rentabilidad) + "%");
+
+}
